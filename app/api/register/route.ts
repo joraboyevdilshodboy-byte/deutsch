@@ -2,7 +2,7 @@ import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma";
+import { isDatabaseConnectionError, prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -63,6 +63,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Bu email bilan akkaunt allaqachon mavjud." },
         { status: 409 },
+      );
+    }
+
+    if (isDatabaseConnectionError(error)) {
+      console.error("Registration failed because the database is unavailable", error);
+      return NextResponse.json(
+        { error: "Ma'lumotlar bazasi hozirda mavjud emas. Iltimos, keyinroq qayta urinib ko'ring." },
+        { status: 503 },
       );
     }
 
