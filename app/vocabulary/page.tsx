@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageIntro, ProgressBar } from "@/components/learning/learning-ui";
 import { starterVocabulary } from "@/lib/learning-content";
-import { useUserLevel } from "@/lib/user-level";
+import { useUserLevel, type UserLevel } from "@/lib/user-level";
 
 type ReviewCard = typeof starterVocabulary[number] & {
   reviewed: boolean;
@@ -121,7 +121,7 @@ export default function VocabularyPage() {
         const flash = Array.isArray(data?.items?.flashcards) ? data.items.flashcards.filter((card: any) => card.level === level || !("level" in card)) : null;
         const source = Array.isArray(flash) && flash.length ? flash : starterVocabulary.filter((item) => item.level === level).slice(0, Math.min(20, count));
 
-        const available = source.slice(0, Math.min(source.length, count)).map((card: any) => ({
+        const available: ReviewCard[] = source.slice(0, Math.min(source.length, count)).map((card: any) => ({
           id: card.id ?? `${card.word}`,
           german: card.word.replace(/\s*\(.*\)$/, ""),
           article: "",
@@ -132,7 +132,7 @@ export default function VocabularyPage() {
           category: card.category ?? "Kunlik",
           interval: card.interval ?? 1,
           nextReview: card.nextReview ?? undefined,
-          level: (card.level as string) || level,
+          level: ((card.level as UserLevel | undefined) ?? level) as UserLevel,
         }));
 
         setCards(available);
