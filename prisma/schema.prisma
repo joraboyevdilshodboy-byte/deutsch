@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+/// SQLite does not support enums, so this is stored as a plain string.
+/// The app expects values such as A1, A2, B1, B2, C1, and C2.
+/// A null value means the user has not selected a level yet.
+
+/// The account and session models follow NextAuth's Prisma data model.  The
+/// application uses JWT sessions today, but keeping these models lets the app
+/// switch to a database adapter later without a migration rewrite.
+model User {
+  id                  String                @id @map("_id") @default(auto()) @db.ObjectId
+  name                String?
+  email               String?               @unique
+  emailVerified       DateTime?
+  image               String?
+  passwordHash        String?
+  level               String?
+  streak              Int                   @default(0)
+  preferredPersona    String?
+  longestStreak       Int                   @default(0)
+  totalXp             Int                   @default(0)
+  sessionVersion      Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  exerciseAttempts    ExerciseAttempt[]
+  vocabularyReviews   VocabularyReview[]
+  activities          Activity[]
+  writingSubmissions  WritingSubmission[]
+  conversationMessages ConversationMessage[]
+  exerciseSets        ExerciseSet[]
+}
+
+model Account {
+  id                String  @id @map("_id") @default(auto()) @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
+  expires   DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ExerciseAttempt {
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId      String   @db.ObjectId
+  area        String
+  topic       String?
+  score       Int
+  total       Int
+  answers     String?
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@index([area, topic])
+}
+
+model VocabularyReview {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId       String   @db.ObjectId
+  word         String
+  translation  String?
+  intervalDays Int      @default(1)
+  nextReview   DateTime
+  lastReviewed DateTime?
+  known        Boolean  @default(false)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word])
+  @@index([userId, nextReview])
+}
+
+model Activity {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String   @db.ObjectId
+  kind      String
+  minutes   Int      @default(0)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model WritingSubmission {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String   @db.ObjectId
+  task      String?
+  content   String
+  feedback  String?
+  score     Int?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ConversationMessage {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String   @db.ObjectId
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/// Exercise storage: sets of generated exercises and their items.
+model ExerciseSet {
+  id        String         @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String?         @db.ObjectId
+  level     String?
+  area      String?
+  createdAt DateTime       @default(now())
+  exercises ExerciseItem[]
+  user      User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ExerciseItem {
+  id          String      @id @map("_id") @default(auto()) @db.ObjectId
+  setId       String      @db.ObjectId
+  type        String
+  question    String
+  options     String?
+  answer      String
+  explanation String?
+  set         ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId])
+}
