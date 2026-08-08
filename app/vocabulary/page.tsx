@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageIntro, ProgressBar } from "@/components/learning/learning-ui";
 import { starterVocabulary } from "@/lib/learning-content";
-import { useUserLevel, type UserLevel } from "@/lib/user-level";
+import { LEVELS, useUserLevel, type UserLevel } from "@/lib/user-level";
 
 type ReviewCard = typeof starterVocabulary[number] & {
   reviewed: boolean;
@@ -18,6 +18,14 @@ type QuizQuestion = {
   options: string[];
   answer: string;
 };
+
+function isUserLevel(value: unknown): value is UserLevel {
+  return typeof value === "string" && LEVELS.includes(value as UserLevel);
+}
+
+function getSafeLevel(value: unknown, fallback: UserLevel): UserLevel {
+  return isUserLevel(value) ? value : fallback;
+}
 
 function shuffleArray<T>(items: T[]): T[] {
   const copy = [...items];
@@ -132,7 +140,7 @@ export default function VocabularyPage() {
           category: card.category ?? "Kunlik",
           interval: card.interval ?? 1,
           nextReview: card.nextReview ?? undefined,
-          level: ((card.level as UserLevel | undefined) ?? level) as UserLevel,
+          level: getSafeLevel(card.level ?? level, level),
         }));
 
         setCards(available);
