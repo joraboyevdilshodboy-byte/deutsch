@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { AlertCircle, Bot, Loader2, MessageSquarePlus, Send, Sparkles, Trash2, Volume2, VolumeX } from "lucide-react";
+import { AlertCircle, Bot, Loader2, MessageSquarePlus, Mic, Send, Sparkles, Trash2, Volume2, VolumeX } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PronunciationChecker } from "@/components/learning/pronunciation-checker";
 import { useUserLevel } from "@/lib/user-level";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string; correction?: string; translation?: string };
@@ -31,6 +32,7 @@ function cleanStreamPart(value: string): { text: string; correction?: string } {
 
 export default function SpeakingPage() {
   const [level] = useUserLevel();
+  const [activeTab, setActiveTab] = useState<"chat" | "pronunciation">("chat");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState(""); const [thinking, setThinking] = useState(false); const [persona, setPersona] = useState<string>("default");
@@ -249,8 +251,30 @@ export default function SpeakingPage() {
   };
 
   return (
-    <AppShell title="AI bilan suhbat" subtitle="Nemischa gapiring — AI tinglaydi, javob beradi va muloyim tuzatadi.">
-      <div className="grid h-[calc(100vh-9.5rem)] min-h-[560px] gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+    <AppShell title="Gapirish va Talaffuz" subtitle="Nemischa muloqot qiling va AI yordamida talaffuzingizni baholang.">
+      <div className="mb-6 flex items-center gap-3 rounded-2xl bg-slate-100 p-1.5 w-fit">
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={`focus-ring flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-extrabold transition ${
+            activeTab === "chat" ? "bg-forest text-white shadow-sm" : "text-slate-600 hover:text-ink"
+          }`}
+        >
+          <Bot className="h-4 w-4" /> AI Coach Chat
+        </button>
+        <button
+          onClick={() => setActiveTab("pronunciation")}
+          className={`focus-ring flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-extrabold transition ${
+            activeTab === "pronunciation" ? "bg-forest text-white shadow-sm" : "text-slate-600 hover:text-ink"
+          }`}
+        >
+          <Mic className="h-4 w-4" /> 🎙️ Talaffuzni Tekshirish
+        </button>
+      </div>
+
+      {activeTab === "pronunciation" ? (
+        <PronunciationChecker userLevel={level} />
+      ) : (
+        <div className="grid h-[calc(100vh-13rem)] min-h-[560px] gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="app-card flex min-h-0 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="relative grid h-10 w-10 place-items-center rounded-2xl bg-lime text-forest"><Bot className="h-5 w-5" /><i className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" /></span><div><h2 className="text-sm font-extrabold text-ink">Deutsch Coach</h2><p className="text-xs font-semibold text-emerald-600">● Onlayn · A2–B1</p></div></div><div className="flex items-center gap-2"><button onClick={startNewSession} className="focus-ring inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-forest hover:text-forest" title="Yangi chat ochish"><MessageSquarePlus className="h-4 w-4" /> <span className="hidden sm:inline">Yangi chat</span></button><button onClick={() => setAutoSpeak(!autoSpeak)} className="focus-ring inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-mint hover:text-forest" title="Avtomatik ovoz"><>{autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</> <span className="hidden sm:inline">Ovoz {autoSpeak ? "yoqilgan" : "o‘chiq"}</span></button></div></div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#fcfcf8] px-4 py-4 sm:px-6 sm:py-5">
@@ -406,6 +430,7 @@ export default function SpeakingPage() {
           </section>
         </aside>
       </div>
+      )}
     </AppShell>
   );
 }

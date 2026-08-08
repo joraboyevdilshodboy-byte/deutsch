@@ -44,29 +44,30 @@ const providers: Array<
         return null;
       }
 
-      const user = await prisma.user.findUnique({ where: { email } });
-
-      if (!user?.passwordHash) {
-        return null;
-      }
-
       try {
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user?.passwordHash) {
+          return null;
+        }
+
         const passwordMatches = await compare(password, user.passwordHash);
         if (!passwordMatches) {
           return null;
         }
-      } catch {
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          level: user.level,
+          sessionVersion: user.sessionVersion,
+        };
+      } catch (error) {
+        console.error("Auth authorize error:", error);
         return null;
       }
-
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        level: user.level,
-        sessionVersion: user.sessionVersion,
-      };
     },
   }),
 ];
@@ -88,6 +89,7 @@ export const authOptions: NextAuthConfig = {
     maxAge: 30 * 24 * 60 * 60,
   },
   secret:
+    process.env.AUTH_SECRET ||
     process.env.NEXTAUTH_SECRET ||
     (process.env.NODE_ENV === "production"
       ? undefined
@@ -186,7 +188,7 @@ export const authOptions: NextAuthConfig = {
         token.totalXp = appUser.totalXp ?? 0;
       } else if (token.id) {
         if (!hasDatabaseConfig) {
-          return {};
+          return token;
         }
 
         try {

@@ -4,7 +4,7 @@ import { callGroq, streamGroqText } from "./groq";
 export type { AIMessage, AIProviderResult } from "./gemini";
 export { AIProviderError } from "./gemini";
 
-export type AITask = "chat" | "writing-check";
+export type AITask = "chat" | "writing-check" | "speaking-pronunciation";
 
 export type AIOptions = {
   contents: AIMessage[];
