@@ -4,12 +4,17 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const hasDatabaseConfig = Boolean(process.env.DATABASE_URL?.trim());
+function getDatabaseUrl() {
+  const configured = process.env.DATABASE_URL?.trim() || process.env.MONGODB_URI?.trim();
+  return configured || "";
+}
+
+export const hasDatabaseConfig = Boolean(getDatabaseUrl());
 
 function createUnavailablePrismaClient(): PrismaClient {
   return new Proxy({} as PrismaClient, {
     get() {
-      throw new Error("DATABASE_URL is not configured. Set a valid MongoDB connection string before using Prisma.");
+      throw new Error("Database connection is not configured. Set DATABASE_URL or MONGODB_URI to a valid MongoDB connection string before using Prisma.");
     },
   });
 }
@@ -18,7 +23,7 @@ function createUnavailablePrismaClient(): PrismaClient {
  * Keep a single client during Next.js hot reloads. Creating a new client per
  * request quickly exhausts SQLite connections in development.
  */
-export const prisma = globalForPrisma.prisma ?? (hasDatabaseConfig ? new PrismaClient() : createUnavailablePrismaClient());
+export const prisma = globalForPrisma.prisma ?? (hasDatabaseConfig ? new PrismaClient({ datasources: { db: { url: getDatabaseUrl() } } }) : createUnavailablePrismaClient());
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
