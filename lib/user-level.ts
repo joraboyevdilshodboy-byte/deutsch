@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
 export const LEVELS = ["A1", "A2", "B1", "B2"] as const;
-export type UserLevel = (typeof LEVELS)[number];
+export type VocabularyLevel = (typeof LEVELS)[number];
+export type UserLevel = VocabularyLevel;
 
 export const USER_LEVEL_STORAGE_KEY = "userLevelPreference";
 export const USER_LEVEL_EVENT = "user-level-changed";

@@ -1,4 +1,4 @@
-import type { UserLevel } from "./user-level";
+import type { UserLevel, VocabularyLevel } from "./user-level";
 
 export type Exercise = {
   id: string;
@@ -1105,7 +1105,7 @@ export type VocabularyCard = {
   category: string;
   interval: number;
   nextReview: string;
-  level: UserLevel;
+  level: VocabularyLevel;
 };
 
 const today = new Date().toISOString();
