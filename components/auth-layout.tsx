@@ -12,7 +12,7 @@ export function AuthLayout({ children, title, description }: { children: React.R
           <h2 className="mt-6 text-5xl font-black leading-[1.02] tracking-tight">Kichik odat. Katta ishonch.</h2>
           <p className="mt-5 text-base font-medium leading-relaxed text-white/75">Har kuni gapiring, mashq qiling va tilni haqiqiy hayotda ishlata boshlang.</p>
           <ul className="mt-8 space-y-3 text-sm font-semibold text-white/90">
-            {["A1–C2 uchun yo‘l xaritasi", "AI bilan nemischa suhbat", "O‘zbekcha tushuntirishlar"].map((item) => <li key={item} className="flex items-center gap-3"><span className="grid h-6 w-6 place-items-center rounded-full bg-lime text-forest"><Check className="h-4 w-4 stroke-[3]" /></span>{item}</li>)}
+            {["A1–B2 uchun yo‘l xaritasi", "AI bilan nemischa suhbat", "O‘zbekcha tushuntirishlar"].map((item) => <li key={item} className="flex items-center gap-3"><span className="grid h-6 w-6 place-items-center rounded-full bg-lime text-forest"><Check className="h-4 w-4 stroke-[3]" /></span>{item}</li>)}
           </ul>
         </div>
         <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full border-[42px] border-lime/20" />
