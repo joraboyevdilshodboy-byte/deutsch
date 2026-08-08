@@ -21,13 +21,24 @@ export function hashPasswordResetToken(token: string) {
 }
 
 export function buildPasswordResetUrl(token: string) {
-  const configuredUrl = process.env.NEXTAUTH_URL?.trim() || "http://localhost:3000";
+  const configuredUrl = [
+    process.env.NEXTAUTH_URL,
+    process.env.AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+  ]
+    .map((value) => value?.trim())
+    .find(Boolean);
+
   let baseUrl: URL;
 
   try {
-    baseUrl = new URL(configuredUrl);
+    baseUrl = new URL(configuredUrl ?? "http://localhost:3000");
   } catch {
     baseUrl = new URL("http://localhost:3000");
+  }
+
+  if (!configuredUrl && process.env.VERCEL_URL) {
+    baseUrl = new URL(`https://${process.env.VERCEL_URL}`);
   }
 
   const resetUrl = new URL("/reset-password", baseUrl);
