@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     if (isDatabaseConnectionError(error)) {
       console.error("Registration failed because the database is unavailable", error);
       return NextResponse.json(
-        { error: "Ma'lumotlar bazasi hozirda mavjud emas. Iltimos, keyinroq qayta urinib ko'ring." },
+        { error: "Ma'lumotlar bazasi sozlamalari mavjud emas yoki noto'g'ri. Vercel environment variablesni tekshiring." },
         { status: 503 },
       );
     }

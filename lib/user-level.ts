@@ -41,7 +41,7 @@ export function getLevelLabel(level: UserLevel) {
 }
 
 export function useUserLevel() {
-  const [level, setLevelState] = useState<UserLevel>(getStoredLevel);
+  const [level, setLevelState] = useState<UserLevel>("A1");
 
   useEffect(() => {
     const handleLevelChange = () => setLevelState(getStoredLevel());

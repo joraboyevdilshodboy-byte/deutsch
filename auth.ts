@@ -5,7 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma";
+import { hasDatabaseConfig, prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -39,6 +39,11 @@ const providers: Array<
       }
 
       const { email, password } = parsedCredentials.data;
+
+      if (!hasDatabaseConfig) {
+        return null;
+      }
+
       const user = await prisma.user.findUnique({ where: { email } });
 
       if (!user?.passwordHash) {
@@ -98,6 +103,10 @@ export const authOptions: NextAuthConfig = {
 
       const email = user.email?.trim().toLowerCase();
       if (!email) {
+        return false;
+      }
+
+      if (!hasDatabaseConfig) {
         return false;
       }
 
@@ -175,6 +184,10 @@ export const authOptions: NextAuthConfig = {
         token.longestStreak = appUser.longestStreak ?? 0;
         token.totalXp = appUser.totalXp ?? 0;
       } else if (token.id) {
+        if (!hasDatabaseConfig) {
+          return {};
+        }
+
         try {
           const currentUser = await prisma.user.findUnique({
             where: { id: token.id as string },
