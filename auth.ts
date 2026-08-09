@@ -28,26 +28,20 @@ function normalizeAppUrl(value: string) {
 function resolveAppBaseUrl() {
   const isVercel = Boolean(process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL);
 
-  const candidates = (isVercel
-    ? [
-        process.env.NEXT_PUBLIC_APP_URL,
-        process.env.AUTH_URL,
-        process.env.NEXTAUTH_URL,
-        process.env.VERCEL_PROJECT_PRODUCTION_URL,
-        process.env.VERCEL_URL,
-      ]
-    : [
-        process.env.NEXTAUTH_URL,
-        process.env.AUTH_URL,
-        process.env.NEXT_PUBLIC_APP_URL,
-        process.env.VERCEL_PROJECT_PRODUCTION_URL,
-        process.env.VERCEL_URL,
-      ]
-  )
+  const explicitCandidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.AUTH_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+    "https://deutsch.gg",
+    "https://www.deutsch.gg",
+    "https://deutsch-gg.vercel.app",
+  ]
     .map((value) => value?.trim())
     .filter(Boolean) as string[];
 
-  for (const candidate of candidates) {
+  for (const candidate of explicitCandidates) {
     const normalized = normalizeAppUrl(candidate);
     if (!normalized.includes("localhost") && !normalized.includes("127.0.0.1")) {
       return normalized;
@@ -63,13 +57,8 @@ function resolveAppBaseUrl() {
 
 const appBaseUrl = resolveAppBaseUrl();
 
-if (!process.env.NEXTAUTH_URL) {
-  process.env.NEXTAUTH_URL = appBaseUrl;
-}
-
-if (!process.env.AUTH_URL) {
-  process.env.AUTH_URL = appBaseUrl;
-}
+process.env.NEXTAUTH_URL = appBaseUrl;
+process.env.AUTH_URL = appBaseUrl;
 
 type AppUser = {
   id: string;
