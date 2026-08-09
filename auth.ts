@@ -12,26 +12,53 @@ const credentialsSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+function normalizeAppUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
 function resolveAppBaseUrl() {
-  const configured = [
-    process.env.NEXTAUTH_URL,
-    process.env.AUTH_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL,
-    process.env.VERCEL_URL,
-  ]
+  const isVercel = Boolean(process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL);
+
+  const candidates = (isVercel
+    ? [
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.AUTH_URL,
+        process.env.NEXTAUTH_URL,
+        process.env.VERCEL_PROJECT_PRODUCTION_URL,
+        process.env.VERCEL_URL,
+      ]
+    : [
+        process.env.NEXTAUTH_URL,
+        process.env.AUTH_URL,
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.VERCEL_PROJECT_PRODUCTION_URL,
+        process.env.VERCEL_URL,
+      ]
+  )
     .map((value) => value?.trim())
-    .find(Boolean);
+    .filter(Boolean) as string[];
 
-  if (!configured) {
-    return process.env.NODE_ENV === "production" ? "https://deutsch-gg.vercel.app" : "http://localhost:3000";
+  for (const candidate of candidates) {
+    const normalized = normalizeAppUrl(candidate);
+    if (!normalized.includes("localhost") && !normalized.includes("127.0.0.1")) {
+      return normalized;
+    }
   }
 
-  if (/^https?:\/\//i.test(configured)) {
-    return configured;
+  if (isVercel || process.env.NODE_ENV === "production") {
+    return "https://deutsch-gg.vercel.app";
   }
 
-  return `https://${configured}`;
+  return "http://localhost:3000";
 }
 
 const appBaseUrl = resolveAppBaseUrl();

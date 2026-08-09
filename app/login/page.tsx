@@ -62,7 +62,10 @@ function LoginPageContent() {
         onClick={async () => {
           setGoogleLoading(true);
           const callbackUrl = typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard";
-          await signIn("google", { callbackUrl });
+          await signIn("google", {
+            callbackUrl,
+            redirect: true,
+          });
         }}
         className="focus-ring flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-ink hover:bg-slate-50 disabled:opacity-60"
       >
