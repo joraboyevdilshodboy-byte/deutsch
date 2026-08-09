@@ -22,9 +22,9 @@ export function hashPasswordResetToken(token: string) {
 
 export function buildPasswordResetUrl(token: string) {
   const configuredUrl = [
+    process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXTAUTH_URL,
     process.env.AUTH_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
   ]
     .map((value) => value?.trim())
     .find(Boolean);
@@ -32,9 +32,9 @@ export function buildPasswordResetUrl(token: string) {
   let baseUrl: URL;
 
   try {
-    baseUrl = new URL(configuredUrl ?? "http://localhost:3000");
+    baseUrl = new URL(configuredUrl ?? "https://deutsch-gg.vercel.app");
   } catch {
-    baseUrl = new URL("http://localhost:3000");
+    baseUrl = new URL("https://deutsch-gg.vercel.app");
   }
 
   if (!configuredUrl && process.env.VERCEL_URL) {

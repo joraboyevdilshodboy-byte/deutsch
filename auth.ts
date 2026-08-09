@@ -26,41 +26,24 @@ function normalizeAppUrl(value: string) {
 }
 
 function resolveAppBaseUrl() {
-  if (process.env.NODE_ENV === "development") {
-    const devCandidate = [
-      process.env.NEXT_PUBLIC_APP_URL,
-      process.env.NEXTAUTH_URL,
-      process.env.AUTH_URL,
-    ]
-      .map((value) => value?.trim())
-      .find(Boolean);
-
-    return normalizeAppUrl(devCandidate || "http://localhost:3000");
-  }
-
-  const isVercel = Boolean(process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL);
-
-  const explicitCandidates = [
+  const configured = [
     process.env.NEXT_PUBLIC_APP_URL,
-    process.env.AUTH_URL,
     process.env.NEXTAUTH_URL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL,
-    process.env.VERCEL_URL,
-    "https://deutsch.gg",
-    "https://www.deutsch.gg",
-    "https://deutsch-gg.vercel.app",
+    process.env.AUTH_URL,
   ]
     .map((value) => value?.trim())
-    .filter(Boolean) as string[];
+    .find(Boolean);
 
-  for (const candidate of explicitCandidates) {
-    const normalized = normalizeAppUrl(candidate);
-    if (!normalized.includes("localhost") && !normalized.includes("127.0.0.1")) {
-      return normalized;
-    }
+  if (configured) {
+    return normalizeAppUrl(configured);
   }
 
-  if (isVercel || process.env.NODE_ENV === "production") {
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (vercelUrl) {
+    return normalizeAppUrl(vercelUrl);
+  }
+
+  if (process.env.NODE_ENV === "production") {
     return "https://deutsch-gg.vercel.app";
   }
 
