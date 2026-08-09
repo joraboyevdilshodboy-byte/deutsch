@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageIntro, ProgressBar, cx } from "@/components/learning/learning-ui";
 import { getWritingPromptsForLevel } from "@/lib/learning-content";
-import { recordLearningActivity } from "@/lib/learning-progress";
+import { LEARNING_PROGRESS_EVENT, recordLearningActivity } from "@/lib/learning-progress";
 import { useUserLevel } from "@/lib/user-level";
 
 type WritingFeedback = {
@@ -160,6 +160,20 @@ export default function WritingPage() {
         setParsedFeedback(parseFeedback(rawFeedbackStr));
       }
       recordLearningActivity({ module: "writing", minutes: Math.max(6, Math.ceil(wordCount / 14)), attempted: wordCount, correct: wordCount });
+      void fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "writing",
+          content: text,
+          task: prompt.title,
+          feedback: rawFeedbackStr,
+          score: Math.round((wordCount / targetMax) * 80),
+          minutes: Math.max(6, Math.ceil(wordCount / 14)),
+        }),
+      })
+        .then(() => window.dispatchEvent(new Event(LEARNING_PROGRESS_EVENT)))
+        .catch(() => {});
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
       setError(caught instanceof Error ? caught.message : "Kutilmagan xatolik yuz berdi.");

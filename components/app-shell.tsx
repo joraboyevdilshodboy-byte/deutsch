@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
+  AudioLines,
   BarChart3,
   BookOpen,
   ChevronRight,
@@ -25,6 +26,7 @@ import { LEVELS, useUserLevel, type UserLevel } from "@/lib/user-level";
 
 const navigation = [
   { href: "/dashboard", label: "Bosh sahifa", icon: LayoutDashboard },
+  { href: "/voice", label: "Voice AI Premium", icon: AudioLines },
   { href: "/grammar", label: "Grammatika", icon: BookOpen },
   { href: "/speaking", label: "AI suhbat", icon: MessageCircle },
   { href: "/listening", label: "Tinglash", icon: Headphones },

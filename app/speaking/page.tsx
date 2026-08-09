@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { AlertCircle, Bot, Loader2, MessageSquarePlus, Mic, Send, Sparkles, Trash2, Volume2, VolumeX } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PronunciationChecker } from "@/components/learning/pronunciation-checker";
+import { LEARNING_PROGRESS_EVENT } from "@/lib/learning-progress";
 import { useUserLevel } from "@/lib/user-level";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string; correction?: string; translation?: string };
@@ -243,7 +244,9 @@ export default function SpeakingPage() {
       }
 
       if (autoSpeak) speakText(fullText);
-      void fetch("/api/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "activity", kind: "speaking", minutes: 3 }) });
+      void fetch("/api/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "activity", kind: "speaking", minutes: 3 }) })
+        .then(() => window.dispatchEvent(new Event(LEARNING_PROGRESS_EVENT)))
+        .catch(() => {});
     } catch (cause) {
       updateActiveSessionMessages((current) => current.filter((item) => item.id !== assistantId));
       setError(cause instanceof Error ? cause.message : "Suhbatni davom ettirib bo‘lmadi.");
@@ -267,7 +270,7 @@ export default function SpeakingPage() {
             activeTab === "pronunciation" ? "bg-forest text-white shadow-sm" : "text-slate-600 hover:text-ink"
           }`}
         >
-          <Mic className="h-4 w-4" /> 🎙️ Talaffuzni Tekshirish
+          <Mic className="h-4 w-4" /> Talaffuzni Tekshirish
         </button>
       </div>
 

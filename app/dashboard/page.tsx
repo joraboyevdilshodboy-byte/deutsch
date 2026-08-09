@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, CheckCircle2, Headphones, MessageCircle, PenLine, Sparkles, Target, TrendingUp, type LucideIcon } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+import { ArrowRight, AudioLines, BookOpen, CheckCircle2, Headphones, MessageCircle, PenLine, Sparkles, Target, TrendingUp, type LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { CurrentLevelBadge } from "@/components/current-level-badge";
 import { getDashboardSummary, type DashboardSection } from "@/lib/dashboard";
@@ -54,7 +56,20 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-3">
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/dashboard/voice" className="focus-ring group relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-violet-800 p-5 text-white shadow-xl shadow-blue-900/20 transition hover:-translate-y-1 hover:shadow-2xl">
+          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+          <div className="flex items-center gap-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/15 backdrop-blur-sm"><AudioLines className="h-5 w-5" /></span>
+            <div>
+              <p className="text-lg font-black">Voice AI</p>
+              <p className="text-[11px] font-bold text-white/70">Gapirib o'rganing</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs font-semibold leading-relaxed text-white/75">Orb bilan gaplashing — AI sizni tinglaydi va javob beradi.</p>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-extrabold backdrop-blur-sm transition group-hover:bg-white/25">Boshlash <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+        </Link>
+
         <div className="app-card flex items-center gap-4 p-5"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-orange-100 text-xl">🔥</span><div><p className="text-2xl font-black text-ink">{streak}</p><p className="text-xs font-bold text-slate-500">kunlik ketma-ketlik</p></div></div>
         <div className="app-card flex items-center gap-4 p-5"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-lime text-forest"><TrendingUp className="h-5 w-5" /></span><div><CurrentLevelBadge fallback={level} /><p className="text-xs font-bold text-slate-500">hozirgi daraja</p></div></div>
         <div className="app-card flex items-center gap-4 p-5"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-violet-100 text-violet-700"><Sparkles className="h-5 w-5" /></span><div><p className="text-2xl font-black text-ink">{totalXp}</p><p className="text-xs font-bold text-slate-500">jami XP</p></div></div>

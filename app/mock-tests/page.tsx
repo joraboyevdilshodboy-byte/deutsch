@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Sparkles, TrendingUp } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
+import { LEARNING_PROGRESS_EVENT } from "@/lib/learning-progress";
 import { useUserLevel } from "@/lib/user-level";
 import { buildMockQuestions, scoreMockTest, summarizeScore } from "@/lib/mock-test-utils";
 
@@ -20,8 +21,25 @@ export default function MockTestsPage() {
   };
 
   const handleSubmit = () => {
-    setResult(scoreMockTest(questions, answers));
+    const scored = scoreMockTest(questions, answers);
+    setResult(scored);
     setSubmitted(true);
+
+    // Record this mock test session for real progress tracking.
+    const duration = Math.max(10, Math.round(questions.length * 0.8));
+    void fetch("/api/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "session",
+        activityType: "mock-test",
+        durationMinutes: duration,
+        correctAnswers: scored.correctCount,
+        totalQuestions: scored.totalQuestions,
+      }),
+    })
+      .then(() => window.dispatchEvent(new Event(LEARNING_PROGRESS_EVENT)))
+      .catch(() => {});
   };
 
   const summary = result ? summarizeScore(result.percentage) : null;

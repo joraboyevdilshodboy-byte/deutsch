@@ -1,9 +1,16 @@
 import { grammarTopics } from "@/lib/learning-content";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getMinutesForWindow } from "@/lib/progress-metrics";
 
-function utcStartOfDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+function localStartOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
 function clampPercent(value: number) {
@@ -36,9 +43,16 @@ export async function getDashboardSummary(): Promise<DashboardSummary | null> {
     return null;
   }
 
-  const today = utcStartOfDay(new Date());
+  const today = localStartOfDay(new Date());
+  const startOfWeek = (() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+    return monday;
+  })();
 
-  const [exerciseStats, activityGroups, lastGrammarAttempt, todayActivity, grammarAttempts, weeklyActivities] = await prisma.$transaction([
+  const [exerciseStats, activityGroups, lastGrammarAttempt, grammarAttempts, weeklySessions, todaySessions] = await prisma.$transaction([
     prisma.exerciseAttempt.groupBy({
       by: ["area"],
       _count: true,
@@ -56,24 +70,24 @@ export async function getDashboardSummary(): Promise<DashboardSummary | null> {
       orderBy: { completedAt: "desc" },
       select: { topic: true },
     }),
-    prisma.activity.aggregate({
-      where: { userId: user.id, createdAt: { gte: today } },
-      _sum: { minutes: true },
-    }),
     prisma.exerciseAttempt.aggregate({
       where: { userId: user.id, area: "grammar" },
       _sum: { score: true, total: true },
     }),
-    prisma.activity.findMany({
-      where: { userId: user.id, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
-      select: { minutes: true, createdAt: true },
+    prisma.studySession.findMany({
+      where: { userId: user.id, createdAt: { gte: startOfWeek } },
+      select: { durationMinutes: true, createdAt: true },
+    }),
+    prisma.studySession.findMany({
+      where: { userId: user.id, createdAt: { gte: today } },
+      select: { durationMinutes: true },
     }),
   ]);
 
   const grammarCount = (() => {
     const item = exerciseStats.find((item) => item.area === "grammar");
-    if (!item || typeof item._count === "boolean") return 0;
-    return item._count?._all ?? 0;
+    if (!item) return 0;
+    return Number(item._count) || 0;
   })();
   const readingMinutes = activityGroups.find((item) => item.kind === "reading")?._sum?.minutes ?? 0;
   const listeningMinutes = activityGroups.find((item) => item.kind === "listening")?._sum?.minutes ?? 0;
@@ -132,9 +146,9 @@ export async function getDashboardSummary(): Promise<DashboardSummary | null> {
   // Build weekly activity chart from real data.
   const dayNames = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
   const weeklyMinutes = new Array(7).fill(0);
-  for (const activity of weeklyActivities) {
-    const dayIndex = (activity.createdAt.getDay() + 6) % 7; // Monday = 0
-    weeklyMinutes[dayIndex] += activity.minutes;
+  for (const session of weeklySessions) {
+    const dayIndex = (session.createdAt.getDay() + 6) % 7; // Monday = 0
+    weeklyMinutes[dayIndex] += session.durationMinutes;
   }
   const maxWeekly = Math.max(...weeklyMinutes, 1);
   const weeklyActivity = dayNames.map((day, index) => ({
@@ -143,12 +157,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary | null> {
     height: Math.round((weeklyMinutes[index] / maxWeekly) * 100),
   }));
 
+  const dailyMinutes = todaySessions.reduce((total, session) => total + session.durationMinutes, 0);
+
   return {
     level: user.level ?? "Aniqlanmagan",
     name: user.name ?? "Til o‘rganuvchi",
     streak: user.streak ?? 0,
     totalXp: user.totalXp ?? 0,
-    todayMinutes: todayActivity._sum.minutes ?? 0,
+    todayMinutes: dailyMinutes,
     sections,
     weeklyActivity,
   };

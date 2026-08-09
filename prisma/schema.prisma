@@ -38,6 +38,7 @@ model User {
   writingSubmissions  WritingSubmission[]
   conversationMessages ConversationMessage[]
   exerciseSets        ExerciseSet[]
+  studySessions       StudySession[]
 }
 
 model Account {
@@ -178,4 +179,19 @@ model ExerciseItem {
   set         ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
 
   @@index([setId])
+}
+
+/// Study sessions: one record per completed exercise/activity.
+/// The progress page aggregates these to show real weekly statistics.
+model StudySession {
+  id              String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId          String   @db.ObjectId
+  activityType    String
+  durationMinutes Int      @default(0)
+  correctAnswers  Int      @default(0)
+  totalQuestions  Int      @default(0)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

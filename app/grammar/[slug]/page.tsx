@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageIntro, QuizCard, cx } from "@/components/learning/learning-ui";
 import { Exercise, grammarTopics } from "@/lib/learning-content";
-import { recordLearningActivity } from "@/lib/learning-progress";
+import { LEARNING_PROGRESS_EVENT, recordLearningActivity } from "@/lib/learning-progress";
 import { useUserLevel } from "@/lib/user-level";
 
 const accent = {
@@ -169,7 +169,11 @@ export default function GrammarTopicPage() {
                       total: result.total,
                       minutes: 8,
                     }),
-                  });
+                  })
+                    .then(() => {
+                      window.dispatchEvent(new Event(LEARNING_PROGRESS_EVENT));
+                    })
+                    .catch(() => {});
                   setSaved(true);
                 }}
               />

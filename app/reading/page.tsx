@@ -6,7 +6,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageIntro, QuizCard, cx } from "@/components/learning/learning-ui";
 import { getReadingLessonsForLevel } from "@/lib/learning-content";
-import { recordLearningActivity } from "@/lib/learning-progress";
+import { LEARNING_PROGRESS_EVENT, recordLearningActivity } from "@/lib/learning-progress";
 import { useUserLevel } from "@/lib/user-level";
 
 export default function ReadingPage() {
@@ -138,6 +138,19 @@ export default function ReadingPage() {
           label="Matn bo‘yicha test"
           onComplete={(result) => {
             recordLearningActivity({ module: "reading", minutes: 8, correct: result.correct, attempted: result.total });
+            void fetch("/api/progress", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "exercise",
+                area: "reading",
+                score: result.correct,
+                total: result.total,
+                minutes: 8,
+              }),
+            })
+              .then(() => window.dispatchEvent(new Event(LEARNING_PROGRESS_EVENT)))
+              .catch(() => {});
             setCompleted(true);
           }}
         />

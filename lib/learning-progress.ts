@@ -13,7 +13,10 @@ const STORAGE_KEY = "deutsch-gg-learning-activity";
 export const LEARNING_PROGRESS_EVENT = "deutsch-gg-learning-progress";
 
 function dayKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function emptyActivities(): LearningActivity[] {

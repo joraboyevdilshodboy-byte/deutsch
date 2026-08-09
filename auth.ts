@@ -12,6 +12,38 @@ const credentialsSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+function resolveAppBaseUrl() {
+  const configured = [
+    process.env.NEXTAUTH_URL,
+    process.env.AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+  ]
+    .map((value) => value?.trim())
+    .find(Boolean);
+
+  if (!configured) {
+    return process.env.NODE_ENV === "production" ? "https://deutsch-gg.vercel.app" : "http://localhost:3000";
+  }
+
+  if (/^https?:\/\//i.test(configured)) {
+    return configured;
+  }
+
+  return `https://${configured}`;
+}
+
+const appBaseUrl = resolveAppBaseUrl();
+
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = appBaseUrl;
+}
+
+if (!process.env.AUTH_URL) {
+  process.env.AUTH_URL = appBaseUrl;
+}
+
 type AppUser = {
   id: string;
   level?: string | null;
@@ -84,6 +116,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 export const authOptions: NextAuthConfig = {
   trustHost: true,
   providers,
+  useSecureCookies: process.env.NODE_ENV === "production",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
