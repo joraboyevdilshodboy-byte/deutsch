@@ -19,11 +19,11 @@ function createUnavailablePrismaClient(): PrismaClient {
   });
 }
 
-/**
- * Keep a single client during Next.js hot reloads. Creating a new client per
- * request quickly exhausts SQLite connections in development.
- */
-export const prisma = globalForPrisma.prisma ?? (hasDatabaseConfig ? new PrismaClient({ datasources: { db: { url: getDatabaseUrl() } } }) : createUnavailablePrismaClient());
+export const prisma =
+  globalForPrisma.prisma ??
+  (hasDatabaseConfig && process.env.NEXT_RUNTIME !== "edge"
+    ? new PrismaClient({ datasources: { db: { url: getDatabaseUrl() } } })
+    : createUnavailablePrismaClient());
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

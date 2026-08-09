@@ -236,7 +236,7 @@ export const authOptions: NextAuthConfig = {
         token.longestStreak = appUser.longestStreak ?? 0;
         token.totalXp = appUser.totalXp ?? 0;
       } else if (token.id) {
-        if (!hasDatabaseConfig) {
+        if (!hasDatabaseConfig || process.env.NEXT_RUNTIME === "edge") {
           return token;
         }
 
