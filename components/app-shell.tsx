@@ -71,12 +71,34 @@ export function AppShell({ children, title, subtitle }: { children: React.ReactN
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-2 pb-9 pt-1">
+      <div className="flex items-center justify-between px-2 pb-6 pt-1">
         <Brand />
         <button className="focus-ring rounded-xl p-2 text-slate-500 lg:hidden" onClick={() => setOpen(false)} aria-label="Menyuni yopish">
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Mobile level selector */}
+      <div className="mb-4 rounded-2xl border border-slate-200/80 bg-slate-50 p-3 lg:hidden">
+        <p className="mb-2 text-xs font-bold text-slate-500">Nemis tili darajangiz:</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {LEVELS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setLevel(value as UserLevel)}
+              className={`rounded-xl py-2 text-xs font-extrabold transition ${
+                level === value
+                  ? "bg-forest text-white shadow-md shadow-forest/20"
+                  : "border border-slate-200/60 bg-white text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <NavLinks onNavigate={() => setOpen(false)} />
       <div className="mt-auto rounded-3xl bg-mint p-4">
         <p className="text-xs font-bold text-forest">Bugungi maqsad</p>
