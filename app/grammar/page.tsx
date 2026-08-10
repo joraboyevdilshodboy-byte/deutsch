@@ -82,7 +82,7 @@ export default function GrammarPage() {
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-300">
                 <span className="inline-flex items-center gap-1.5"><Clock3 className="size-4 text-violet-300" />{continueTopic.duration}</span>
-                <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-4 text-violet-300" />{topicProgress[continueTopic.slug] ?? 0}% bajarilgan</span>
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-4 text-violet-300" />{Math.round(topicProgress[continueTopic.slug] ?? 0)}% bajarilgan</span>
               </div>
             </div>
             <Link

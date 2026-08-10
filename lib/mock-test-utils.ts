@@ -314,7 +314,7 @@ export function scoreMockTest(questions: Pick<MockQuestion, 'id' | 'answer'>[], 
   return {
     correctCount,
     totalQuestions,
-    percentage: totalQuestions === 0 ? 0 : Number(((correctCount / totalQuestions) * 100).toFixed(2)),
+    percentage: totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 100),
     answers,
   } as MockTestResult;
 }

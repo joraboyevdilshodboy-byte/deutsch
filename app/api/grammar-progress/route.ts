@@ -22,7 +22,7 @@ export async function GET() {
   for (const attempt of attempts) {
     if (!attempt.topic) continue;
     const current = topicProgress[attempt.topic] ?? 0;
-    const percent = attempt.total > 0 ? (attempt.score / attempt.total) * 100 : 0;
+    const percent = attempt.total > 0 ? Math.round((attempt.score / attempt.total) * 100) : 0;
     topicProgress[attempt.topic] = Math.max(current, percent);
   }
 
