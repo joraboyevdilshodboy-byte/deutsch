@@ -7,6 +7,122 @@ import { FormEvent, Suspense, useState } from "react";
 import { AlertCircle, Eye, EyeOff, Loader2, Mail, X } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000;
+const LOGIN_ATTEMPTS_KEY = "deutsch-gg-login-attempts";
+
+type LoginAttemptRecord = {
+  count: number;
+  firstAttemptAt: number;
+  lockedUntil?: number;
+};
+
+function getNormalizedEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function readAttemptRecord(email: string): LoginAttemptRecord | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storage = window.localStorage.getItem(LOGIN_ATTEMPTS_KEY);
+    if (!storage) {
+      return null;
+    }
+
+    const parsed = JSON.parse(storage) as Record<string, LoginAttemptRecord>;
+    const record = parsed[getNormalizedEmail(email)];
+    if (!record) {
+      return null;
+    }
+
+    const now = Date.now();
+    if (record.lockedUntil && record.lockedUntil <= now) {
+      delete parsed[getNormalizedEmail(email)];
+      window.localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(parsed));
+      return null;
+    }
+
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+function writeAttemptRecord(email: string, record: LoginAttemptRecord | null) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const storage = window.localStorage.getItem(LOGIN_ATTEMPTS_KEY);
+    const parsed = storage ? (JSON.parse(storage) as Record<string, LoginAttemptRecord>) : {};
+    const normalizedEmail = getNormalizedEmail(email);
+
+    if (!record) {
+      delete parsed[normalizedEmail];
+      window.localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(parsed));
+      return;
+    }
+
+    parsed[normalizedEmail] = record;
+    window.localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(parsed));
+  } catch {
+    // Ignore localStorage errors and fall back to disabled form state only for this session.
+  }
+}
+
+function getLoginLockStatus(email: string) {
+  const normalizedEmail = getNormalizedEmail(email);
+  if (!normalizedEmail) {
+    return { blocked: false, remainingMs: 0, attemptsLeft: MAX_LOGIN_ATTEMPTS };
+  }
+
+  const record = readAttemptRecord(normalizedEmail);
+  if (!record) {
+    return { blocked: false, remainingMs: 0, attemptsLeft: MAX_LOGIN_ATTEMPTS };
+  }
+
+  if (record.lockedUntil && record.lockedUntil > Date.now()) {
+    return { blocked: true, remainingMs: record.lockedUntil - Date.now(), attemptsLeft: 0 };
+  }
+
+  return { blocked: false, remainingMs: 0, attemptsLeft: Math.max(0, MAX_LOGIN_ATTEMPTS - record.count) };
+}
+
+function registerFailedLogin(email: string) {
+  const normalizedEmail = getNormalizedEmail(email);
+  if (!normalizedEmail) {
+    return { blocked: false, attemptsLeft: MAX_LOGIN_ATTEMPTS, remainingMs: 0 };
+  }
+
+  const now = Date.now();
+  const existing = readAttemptRecord(normalizedEmail) ?? { count: 0, firstAttemptAt: now };
+
+  const shouldResetWindow = !existing.firstAttemptAt || now - existing.firstAttemptAt > LOCKOUT_DURATION_MS;
+  if (shouldResetWindow) {
+    existing.count = 0;
+    existing.firstAttemptAt = now;
+  }
+
+  existing.count += 1;
+
+  if (existing.count >= MAX_LOGIN_ATTEMPTS) {
+    const lockedUntil = now + LOCKOUT_DURATION_MS;
+    writeAttemptRecord(normalizedEmail, { ...existing, lockedUntil });
+    return { blocked: true, attemptsLeft: 0, remainingMs: LOCKOUT_DURATION_MS };
+  }
+
+  writeAttemptRecord(normalizedEmail, existing);
+  return { blocked: false, attemptsLeft: MAX_LOGIN_ATTEMPTS - existing.count, remainingMs: 0 };
+}
+
+function clearFailedLoginAttempts(email: string) {
+  writeAttemptRecord(email, null);
+}
+
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,13 +137,35 @@ function LoginPageContent() {
   const [devResetUrl, setDevResetUrl] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
+  const loginLockStatus = getLoginLockStatus(email);
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    if (loginLockStatus.blocked) {
+      const minutes = Math.ceil((loginLockStatus.remainingMs || LOCKOUT_DURATION_MS) / 60000);
+      setError(`Siz 5 marta noto'g'ri kirishga urindingiz. ${minutes} daqiqa kutib turing.`);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) { setError("Email yoki parol noto‘g‘ri. Qaytadan urinib ko‘ring."); return; }
+      if (result?.error) {
+        const failedAttemptState = registerFailedLogin(email);
+
+        if (failedAttemptState.blocked) {
+          setError("Siz 5 marta noto‘g‘ri parol kirgansiz. 5 daqiqa kutib turing, so‘ngra qayta urinib ko‘ring.");
+          return;
+        }
+
+        const remainingAttempts = failedAttemptState.attemptsLeft;
+        setError(`Email yoki parol noto‘g‘ri. Yana ${remainingAttempts} ta urinish qoldi.`);
+        return;
+      }
+
+      clearFailedLoginAttempts(email);
       router.push(searchParams.get("callbackUrl") || "/dashboard");
       router.refresh();
     } catch { setError("Kirishda xatolik yuz berdi. Internet aloqangizni tekshiring."); }
@@ -62,7 +200,7 @@ function LoginPageContent() {
         <label className="block text-sm font-bold text-ink">Email<input autoComplete="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="siz@email.com" className="focus-ring mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm font-medium placeholder:text-slate-400" /></label>
         <label className="block text-sm font-bold text-ink">Parol<div className="relative mt-1.5"><input autoComplete="current-password" required minLength={8} type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="focus-ring w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 pr-11 text-sm font-medium" /><button type="button" aria-label="Parolni ko‘rsatish" onClick={() => setShowPassword(!showPassword)} className="focus-ring absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></label>
         <div className="flex justify-end"><button type="button" onClick={() => { setResetOpen(true); setResetMessage(""); setDevResetUrl(""); }} className="focus-ring rounded-lg text-xs font-bold text-forest hover:underline">Parolni unutdingizmi?</button></div>
-        <button disabled={loading} className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-forest px-4 py-3.5 text-sm font-extrabold text-white hover:bg-forest/90 disabled:cursor-not-allowed disabled:opacity-60">{loading && <Loader2 className="h-4 w-4 animate-spin" />} Kirish</button>
+        <button disabled={loading || loginLockStatus.blocked} className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-forest px-4 py-3.5 text-sm font-extrabold text-white hover:bg-forest/90 disabled:cursor-not-allowed disabled:opacity-60">{loading && <Loader2 className="h-4 w-4 animate-spin" />} {loginLockStatus.blocked ? "Kirish bloklangan" : "Kirish"}</button>
       </form>
       <div className="my-6 flex items-center gap-3 text-xs font-medium text-slate-400"><div className="h-px flex-1 bg-slate-200" />yoki<div className="h-px flex-1 bg-slate-200" /></div>
       <button
