@@ -12,9 +12,38 @@ type ChatSession = { id: string; title: string; messages: ChatMessage[]; created
 
 const starters = ["Hallo! Ich möchte heute über meinen Alltag sprechen.", "Was machst du gern am Wochenende?", "Kannst du mir eine Frage über Reisen stellen?"];
 
+function createId() {
+  const cryptoApi = globalThis.crypto;
+
+  if (cryptoApi && typeof cryptoApi.randomUUID === "function") {
+    return cryptoApi.randomUUID();
+  }
+
+  if (cryptoApi && typeof cryptoApi.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    cryptoApi.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    const hex = Array.from(bytes)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join("-");
+  }
+
+  return `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function createSession(title: string): ChatSession {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     title,
     createdAt: new Date().toISOString(),
     messages: [{ id: "welcome", role: "assistant", content: "Hallo! Ich bin dein Deutschlehrer. Worüber möchtest du heute sprechen? Du kannst auf Deutsch oder Uzbekisch schreiben." }],
@@ -184,8 +213,8 @@ export default function SpeakingPage() {
       setActiveSessionId(fallbackSession.id);
       return;
     }
-    const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: message };
-    const assistantId = crypto.randomUUID();
+    const userMessage: ChatMessage = { id: createId(), role: "user", content: message };
+    const assistantId = createId();
     const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "" };
     const nextMessages: ChatMessage[] = [...(messages ?? []), userMessage, assistantMessage];
     const title = messages.length <= 1 ? message.slice(0, 28) : undefined;
@@ -277,8 +306,8 @@ export default function SpeakingPage() {
       {activeTab === "pronunciation" ? (
         <PronunciationChecker userLevel={level} />
       ) : (
-        <div className="grid h-[calc(100vh-13rem)] min-h-[560px] gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="app-card flex min-h-0 flex-col overflow-hidden">
+        <div className="flex flex-col gap-6 xl:grid xl:h-[calc(100dvh-12rem)] xl:min-h-[420px] xl:grid-cols-[minmax(0,1fr)_300px]">
+        <section className="app-card flex min-h-[420px] min-h-0 flex-col overflow-hidden xl:h-full">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="relative grid h-10 w-10 place-items-center rounded-2xl bg-lime text-forest"><Bot className="h-5 w-5" /><i className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" /></span><div><h2 className="text-sm font-extrabold text-ink">Deutsch Coach</h2><p className="text-xs font-semibold text-emerald-600">● Onlayn · A2–B1</p></div></div><div className="flex items-center gap-2"><button onClick={startNewSession} className="focus-ring inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-forest hover:text-forest" title="Yangi chat ochish"><MessageSquarePlus className="h-4 w-4" /> <span className="hidden sm:inline">Yangi chat</span></button><button onClick={() => setAutoSpeak(!autoSpeak)} className="focus-ring inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-mint hover:text-forest" title="Avtomatik ovoz"><>{autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</> <span className="hidden sm:inline">Ovoz {autoSpeak ? "yoqilgan" : "o‘chiq"}</span></button></div></div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#fcfcf8] px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-0.5 pr-1 [scrollbar-gutter:stable]">
@@ -343,7 +372,7 @@ export default function SpeakingPage() {
             </div>
           </div>
 
-          <div className="border-t border-slate-100 bg-white p-4 sm:p-5">
+          <div className="sticky bottom-0 border-t border-slate-100 bg-white p-4 sm:p-5">
             {error ? (
               <p role="alert" className="mb-3 flex gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
                 <AlertCircle className="h-4 w-4 shrink-0" />

@@ -26,6 +26,17 @@ function normalizeAppUrl(value: string) {
 }
 
 function resolveAppBaseUrl() {
+  const localOverride = [
+    process.env.LOCAL_APP_URL,
+    process.env.DEV_APP_URL,
+  ]
+    .map((value) => value?.trim())
+    .find(Boolean);
+
+  if (process.env.NODE_ENV !== "production") {
+    return normalizeAppUrl(localOverride || "http://localhost:3000");
+  }
+
   const configured = [
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXTAUTH_URL,
@@ -43,11 +54,7 @@ function resolveAppBaseUrl() {
     return normalizeAppUrl(vercelUrl);
   }
 
-  if (process.env.NODE_ENV === "production") {
-    return "https://deutsch-gg.vercel.app";
-  }
-
-  return "http://localhost:3000";
+  return "https://deutsch-gg.vercel.app";
 }
 
 const appBaseUrl = resolveAppBaseUrl();

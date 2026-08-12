@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { callAI, AIProviderError } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,12 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Davom etish uchun tizimga kiring." }, { status: 401 });
+  }
+
+  const key = `${session.user.id}:grammar-check`;
+  const rateLimit = enforceRateLimit(key, { maxRequests: 10, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfterMs);
   }
 
   let payload: unknown;
